@@ -1,19 +1,41 @@
-# APP Salud Ocupacional UNACEM
+# APP Salud Ocupacional UNACEM - Google Sheets
 
-Aplicativo web demo para reporte diario de aptitud médica/síntomas, pensado para publicarse en GitHub Pages sin cuentas Power Apps.
+## 1. Preparar Google Sheet
+Usa el archivo:
+https://docs.google.com/spreadsheets/d/1_iaQ5gpJpYxVKAz2hmYmiVij6JirzgLH9bwdjfKPmvs/edit
 
-## Módulos
-- Portal Trabajador: ingreso por DNI, validación de datos y reporte de actividades/síntomas.
-- Portal Empresa: carga manual o CSV de trabajadores.
-- Dashboard: reportabilidad por empresa, condición y cumplimiento.
+El Apps Script creará automáticamente estas hojas si no existen:
+- Trabajadores
+- Reportes
 
-## Publicar en GitHub Pages
-1. Crear un repositorio nuevo, por ejemplo `app-salud-unacem`.
-2. Subir estos archivos en la raíz del repositorio.
-3. Ir a Settings > Pages.
-4. En Source seleccionar `Deploy from a branch`.
-5. Branch: `main`, folder: `/root`.
-6. Guardar y abrir el enlace generado por GitHub Pages.
+## 2. Instalar Apps Script
+1. Abrir Google Sheet.
+2. Extensiones → Apps Script.
+3. Pegar el contenido de `apps-script/Code.gs`.
+4. Guardar.
+5. Implementar → Nueva implementación.
+6. Tipo: Aplicación web.
+7. Ejecutar como: Yo.
+8. Quién tiene acceso: Cualquier persona.
+9. Copiar la URL terminada en `/exec`.
 
-## Nota técnica
-Esta versión usa `localStorage` para prueba rápida. Para producción se recomienda conectar Supabase/Firebase para base de datos centralizada.
+## 3. Configurar la web
+Abrir `config.js` y reemplazar:
+`PEGAR_AQUI_URL_APPS_SCRIPT`
+por la URL de Apps Script.
+
+## 4. Subir a GitHub
+Subir estos archivos al repositorio:
+- index.html
+- styles.css
+- app.js
+- config.js
+- README.md
+
+## 5. Activar GitHub Pages
+Settings → Pages → Deploy from branch → main → /(root) → Save.
+
+## Flujo
+- Empresa/Contrata carga o actualiza master de trabajadores.
+- Trabajador ingresa DNI y reporta síntomas diarios.
+- Dashboard lee los reportes desde Google Sheets.
