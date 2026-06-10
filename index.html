@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>APP Salud Ocupacional UNACEM</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo">U</span><div><strong>APP SALUD OCUPACIONAL</strong><small>UNACEM - Reporte diario</small></div></div>
+    <nav><button onclick="showScreen('trabajador')">Trabajador</button><button onclick="showScreen('empresa')">Empresa</button><button onclick="showScreen('dashboard')">Dashboard</button></nav>
+  </header>
+
+  <main>
+    <section id="trabajador" class="screen active">
+      <div class="card narrow">
+        <h1>Reporte diario de salud</h1>
+        <p class="note">Ingrese su DNI para validar sus datos y registrar su condición del día.</p>
+        <label>DNI</label>
+        <div class="row"><input id="dniBuscar" placeholder="Ej. 45910198"><button onclick="buscarTrabajador()">Buscar</button></div>
+        <div id="datosTrabajador" class="info hidden"></div>
+        <form id="formReporte" class="hidden">
+          <h3>Actividades de riesgo</h3><div id="actividades"></div>
+          <h3>Síntomas / condición de salud</h3><div id="sintomas"></div>
+          <label>Firma / declaración</label><input id="firma" placeholder="Escriba su nombre completo">
+          <button type="submit" class="primary">Finalizar reporte</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="empresa" class="screen">
+      <div class="card">
+        <h1>Carga de trabajadores por empresa</h1>
+        <p class="note">Registre personal activo. También puede importar un archivo CSV con columnas: dni,nombres,cargo,empresa,sede,rubro,correo.</p>
+        <div class="grid2">
+          <input id="dni" placeholder="DNI"><input id="nombres" placeholder="Apellidos y nombres">
+          <input id="cargo" placeholder="Cargo"><input id="empresaNombre" placeholder="Empresa">
+          <input id="sede" placeholder="Sede"><input id="rubro" placeholder="Rubro">
+          <input id="correo" placeholder="Correo"><select id="estado"><option>Activo</option><option>Inactivo</option></select>
+        </div>
+        <button onclick="guardarTrabajador()" class="primary">Agregar trabajador</button>
+        <input type="file" id="csvInput" accept=".csv" onchange="importarCSV(event)">
+        <h3>Personal registrado</h3><div class="tableWrap"><table id="tablaTrabajadores"></table></div>
+      </div>
+    </section>
+
+    <section id="dashboard" class="screen">
+      <div class="card">
+        <h1>Dashboard reportes de salud</h1>
+        <div class="filters"><input type="date" id="fechaFiltro" onchange="renderDashboard()"><select id="empresaFiltro" onchange="renderDashboard()"><option value="">Todas las empresas</option></select><button onclick="exportarCSV()">Exportar reportes</button></div>
+        <div class="kpis"><div><b id="kpiTrabajadores">0</b><span>Trabajadores activos</span></div><div><b id="kpiReportes">0</b><span>Reportes</span></div><div><b id="kpiCumplimiento">0%</b><span>Cumplimiento</span></div><div><b id="kpiAlertas">0</b><span>Con síntomas</span></div></div>
+        <div class="charts"><div><h3>Reportabilidad por empresa</h3><canvas id="chartEmpresas"></canvas></div><div><h3>Condición del reporte</h3><canvas id="chartCondicion"></canvas></div></div>
+        <h3>Últimos reportes</h3><div class="tableWrap"><table id="tablaReportes"></table></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
