@@ -39,3 +39,9 @@ Settings → Pages → Deploy from branch → main → /(root) → Save.
 - Empresa/Contrata carga o actualiza master de trabajadores.
 - Trabajador ingresa DNI y reporta síntomas diarios.
 - Dashboard lee los reportes desde Google Sheets.
+
+
+## V3 - Validador de permiso de altura
+Incluye pantalla **Validar permiso** para tomar foto del permiso, leer varios DNI mediante OCR y comparar contra los reportes del día en Google Sheets.
+
+IMPORTANTE: actualizar el Apps Script con el nuevo `apps-script/Code.gs` y volver a implementar la aplicación web para que funcione la acción `validarPermiso`.

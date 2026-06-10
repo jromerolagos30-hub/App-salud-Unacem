@@ -25,6 +25,7 @@
         <button class="big" onclick="showView('trabajador')">👷 Trabajador</button>
         <button class="big" onclick="showView('empresa')">🏢 Empresa / Contrata</button>
         <button class="big" onclick="showView('dashboard'); loadDashboard()">📊 Dashboard</button>
+        <button class="big" onclick="showView('validador')">📷 Validar permiso</button>
       </div>
     </section>
 
@@ -92,9 +93,29 @@
       </div>
       <div class="tablewrap"><table id="tablaReportes"></table></div>
     </section>
+
+
+    <section id="validador" class="card hidden">
+      <button class="link" onclick="showView('home')">← Atrás</button>
+      <h2>Validación de permiso de altura</h2>
+      <p class="muted">Tome foto de la zona donde figuran los DNI del permiso. El sistema leerá varios DNI y validará si reportaron síntomas hoy.</p>
+      <div class="row wrap">
+        <input id="valFecha" type="date" />
+        <input id="valEmpresa" placeholder="Empresa opcional" />
+      </div>
+      <label>Foto del permiso</label>
+      <input id="fotoPermiso" type="file" accept="image/*" capture="environment" />
+      <button onclick="leerFotoPermiso()">Leer DNI de foto</button>
+      <p id="ocrEstado" class="muted"></p>
+      <label>DNI detectados / o pegados manualmente</label>
+      <textarea id="dniDetectados" rows="5" placeholder="Ejemplo: 45910198, 40875678, 40564356"></textarea>
+      <button class="primary" onclick="validarPermiso()">Validar reporte de síntomas</button>
+      <div id="resultadoValidacion" class="resultbox"></div>
+    </section>
   </main>
 
   <div id="toast" class="toast hidden"></div>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="config.js"></script>
   <script src="app.js"></script>
 </body>

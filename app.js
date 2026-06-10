@@ -7,7 +7,7 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 function api(action, data={}){if(!API_URL||API_URL.includes('PEGAR_AQUI')) throw new Error('Falta configurar API_URL en config.js'); return fetch(API_URL,{method:'POST',body:JSON.stringify({action,...data})}).then(r=>r.json()).then(j=>{if(!j.ok)throw new Error(j.error||'Error');return j;});}
 function makeChecks(id, arr){document.getElementById(id).innerHTML=arr.map((x,i)=>`<div class="checkrow"><div>${x}</div><div class="opts"><label><input type="radio" name="${id}_${i}" value="SI" required> SI</label><label><input type="radio" name="${id}_${i}" value="NO" required> NO</label></div></div>`).join('');}
 function readChecks(id, arr){let o={};arr.forEach((x,i)=>{const v=document.querySelector(`input[name="${id}_${i}"]:checked`)?.value||'NO';o[x]=v});return o;}
-function init(){makeChecks('actividades',ACTIVIDADES);makeChecks('sintomas',SINTOMAS);document.getElementById('filtroFecha').valueAsDate=new Date();initFirma();}
+function init(){makeChecks('actividades',ACTIVIDADES);makeChecks('sintomas',SINTOMAS);document.getElementById('filtroFecha').valueAsDate=new Date(); const vf=document.getElementById('valFecha'); if(vf) vf.valueAsDate=new Date(); initFirma();}
 async function buscarTrabajador(){const dni=document.getElementById('dniBuscar').value.trim(); if(!dni)return toast('Ingrese DNI'); try{const j=await api('buscarTrabajador',{dni}); trabajadorActual=j.trabajador; const d=document.getElementById('datosTrabajador'); if(!trabajadorActual){d.className='notice error';d.innerHTML='DNI no encontrado o trabajador inactivo.';document.getElementById('formReporte').classList.add('hidden');return;} d.className='notice';d.innerHTML=`<b>${trabajadorActual.Nombres}</b><br>DNI: ${trabajadorActual.DNI}<br>Cargo: ${trabajadorActual.Cargo}<br>Empresa: ${trabajadorActual.Empresa}<br>Sede: ${trabajadorActual.Sede}`;document.getElementById('formReporte').classList.remove('hidden');}catch(e){toast(e.message)}}
 async function guardarReporte(ev){ev.preventDefault(); if(!trabajadorActual)return; const act=readChecks('actividades',ACTIVIDADES), sin=readChecks('sintomas',SINTOMAS); const conSintomas=Object.values(sin).includes('SI'); const criticos=['Falta de aire','Dolor en el pecho','Sensación de desmayo','Alcohol o drogas'].some(k=>sin[k]==='SI'); const data={...trabajadorActual, Fecha:new Date().toISOString(), Condicion:criticos?'ALERTA MÉDICA':(conSintomas?'CON SÍNTOMAS':'SIN SÍNTOMAS'), Observacion:document.getElementById('observacion').value, Firma:document.getElementById('firma').toDataURL('image/png'), Actividades:act, Sintomas:sin}; try{await api('guardarReporte',{reporte:data}); toast('Reporte registrado correctamente'); ev.target.reset(); limpiarFirma(); document.getElementById('formReporte').classList.add('hidden'); document.getElementById('datosTrabajador').classList.add('hidden'); trabajadorActual=null;}catch(e){toast(e.message)}}
 async function guardarTrabajador(ev){ev.preventDefault(); const trabajador={DNI:t_dni.value.trim(),Nombres:t_nombres.value.trim(),Cargo:t_cargo.value.trim(),Empresa:t_empresa.value.trim(),Sede:t_sede.value.trim(),Rubro:t_rubro.value.trim(),Correo:t_correo.value.trim(),Estado:t_estado.value}; try{await api('guardarTrabajador',{trabajador}); toast('Trabajador guardado'); ev.target.reset();}catch(e){toast(e.message)}}
@@ -18,3 +18,37 @@ function exportCSV(){const csv=['Fecha,DNI,Nombres,Empresa,Cargo,Condicion',...r
 function initFirma(){const c=document.getElementById('firma'), ctx=c.getContext('2d'); let down=false; const pos=e=>{const r=c.getBoundingClientRect(), t=e.touches?.[0]||e; return {x:(t.clientX-r.left)*(c.width/r.width),y:(t.clientY-r.top)*(c.height/r.height)}}; const start=e=>{down=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);e.preventDefault()}; const move=e=>{if(!down)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.lineWidth=2;ctx.strokeStyle='#001f60';ctx.stroke();e.preventDefault()}; ['mousedown','touchstart'].forEach(x=>c.addEventListener(x,start)); ['mousemove','touchmove'].forEach(x=>c.addEventListener(x,move)); ['mouseup','mouseleave','touchend'].forEach(x=>c.addEventListener(x,()=>down=false));}
 function limpiarFirma(){const c=document.getElementById('firma');c.getContext('2d').clearRect(0,0,c.width,c.height)}
 init();
+
+
+function extraerDnis(texto){
+  return [...new Set(String(texto||'').match(/\b\d{8}\b/g) || [])];
+}
+async function leerFotoPermiso(){
+  const file=document.getElementById('fotoPermiso').files[0];
+  if(!file) return toast('Seleccione o tome una foto');
+  if(!window.Tesseract) return toast('No cargó el lector OCR. Verifique internet.');
+  ocrEstado.textContent='Leyendo imagen, espere...';
+  try{
+    const r=await Tesseract.recognize(file,'eng',{logger:m=>{ if(m.status) ocrEstado.textContent=`OCR: ${m.status} ${Math.round((m.progress||0)*100)}%`; }});
+    const dnis=extraerDnis(r.data.text);
+    dniDetectados.value=dnis.join('\n');
+    ocrEstado.textContent=dnis.length?`DNI detectados: ${dnis.length}`:'No se detectaron DNI. Puede pegarlos manualmente.';
+  }catch(e){ ocrEstado.textContent='Error OCR. Puede pegar los DNI manualmente.'; toast(e.message); }
+}
+async function validarPermiso(){
+  const dnis=extraerDnis(dniDetectados.value);
+  if(!dnis.length) return toast('No hay DNI para validar');
+  try{
+    const j=await api('validarPermiso',{dnis,fecha:valFecha.value,empresa:valEmpresa.value.trim()});
+    renderValidacion(j);
+  }catch(e){toast(e.message)}
+}
+function renderValidacion(j){
+  const faltan=j.noReportaron||[], sintomas=j.conSintomas||[], ok=j.reportaron||[];
+  let html=`<h3>Resultado de validación</h3><p><b>Fecha:</b> ${j.fecha||''}</p><p><b>DNI leídos:</b> ${j.totalDni}</p>`;
+  if(!faltan.length) html+=`<div class="ok">✅ Todos reportaron sus síntomas hoy.</div>`;
+  else html+=`<div class="bad">❌ No reportaron síntomas hoy:</div><ul>`+faltan.map(x=>`<li>${x.Nombres||'No registrado'} / DNI ${x.DNI}</li>`).join('')+`</ul>`;
+  if(sintomas.length) html+=`<div class="warn">⚠️ Reportaron con síntomas o alerta:</div><ul>`+sintomas.map(x=>`<li>${x.Nombres||''} / DNI ${x.DNI} / ${x.Condicion||''}</li>`).join('')+`</ul>`;
+  if(ok.length && faltan.length) html+=`<details><summary>Ver quienes sí reportaron</summary><ul>`+ok.map(x=>`<li>${x.Nombres||''} / DNI ${x.DNI} / ${x.Condicion||''}</li>`).join('')+`</ul></details>`;
+  resultadoValidacion.innerHTML=html;
+}
