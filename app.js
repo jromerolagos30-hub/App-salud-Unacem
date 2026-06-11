@@ -22,4 +22,24 @@ async function initDashboard(){await loadEmpresas();fillSelect('dashEmp',true);d
 async function loadDashboard(){try{if(!dashFecha.value)dashFecha.value=today();if(dashFechaModo.value==='hoy')dashFecha.value=today();const fecha=dashFechaModo.value==='todos'?'':dashFecha.value;const r=await api('dashboard',{fecha,empresa:dashEmp.value,condicion:dashCond.value});kpis.innerHTML=`<div class="kpi"><b>${r.totalTrabajadores}</b><br>Master activa</div><div class="kpi"><b>${r.totalReportes}</b><br>Reportes</div><div class="kpi"><b>${r.conSintomas}</b><br>Con síntomas</div><div class="kpi"><b>${r.cumplimiento}%</b><br>Cumplimiento</div>`;tablaDash.innerHTML='<table class="table"><tr><th>Fecha</th><th>DNI</th><th>Trabajador</th><th>Empresa</th><th>Condición</th></tr>'+(r.reportes||[]).map(x=>`<tr><td>${x.Fecha}</td><td>${x.DNI}</td><td>${x.Nombres}</td><td>${x.Empresa}</td><td>${x.Condicion}</td></tr>`).join('')+'</table>'}catch(e){toast(e.message)}}
 async function initValidar(){await loadEmpresas();fillSelect('valEmp',true);valFecha.value=today()}
 async function validarPermiso(){try{const dnis=(valDnis.value.match(/\d{8}/g)||[]);if(!dnis.length)return toast('Ingrese al menos un DNI válido de 8 dígitos');const r=await api('validarPermiso',{dnis,fecha:valFecha.value,empresa:valEmp.value});resValidacion.innerHTML=(r.resultado||[]).map(x=>{if(x.estado==='NO_MASTER')return `<div class="bad">❌ DNI ${x.DNI} no se encuentra en la Master</div>`;if(x.estado==='NO_REPORTO')return `<div class="warn">⚠️ Trabajador no generó reporte de síntomas: <b>${x.Nombres}</b> / DNI ${x.DNI}</div>`;if(String(x.condicion).includes('CON SÍNTOMAS'))return `<div class="bad">🚨 Trabajador <b>${x.Nombres}</b> / DNI ${x.DNI} presenta síntomas</div>`;return `<div class="ok">✅ ${x.Nombres} / DNI ${x.DNI}: trabajador no reporta síntomas para hoy</div>`}).join('')}catch(e){toast(e.message)}}
-window.onload=()=>{initChecks();dashFecha.value=today();valFecha.value=today();const v=new URL(location.href).searchParams.get('view');if(v==='trabajador')showView('trabajador');else if(v==='admin')showView('admin')}
+window.onload=()=>{
+  initChecks();
+
+  const v = new URL(location.href).searchParams.get('view');
+
+  if(v === 'trabajador'){
+    showView('trabajador');
+    document.querySelectorAll('a').forEach(a=>{
+      if(a.textContent.includes('Atrás')) a.style.display='none';
+    });
+  } 
+  else if(v === 'admin'){
+    showView('admin');
+  } 
+  else {
+    showView('home');
+  }
+
+  if(document.getElementById('dashFecha')) dashFecha.value=today();
+  if(document.getElementById('valFecha')) valFecha.value=today();
+}
