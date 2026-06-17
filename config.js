@@ -1,1 +1,1 @@
-const API_URL = 'PEGA_AQUI_TU_URL_DE_APPS_SCRIPT_EXEC';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwYwVksUWjoATzC_LWkc-QW3mfLjz4LISSlJaizBLgKPKeVzGrFzpZomi8qVw41bOvi4Q/exec';
