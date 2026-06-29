@@ -1,19 +1,12 @@
-# APP - Reporte Diario de Síntomas para Inicio de Trabajos de Alto Riesgo
+# APP Salud UNACEM V8
 
-## Links directos
-- Trabajador: `https://jromerolagos30-hub.github.io/App-salud-Unacem/?view=trabajador`
-- Administrador: `https://jromerolagos30-hub.github.io/App-salud-Unacem/?view=admin`
-
-## Actualización
-1. Subir a GitHub: `index.html`, `app.js`, `styles.css`, `config.js`, carpeta `assets`.
-2. En Google Sheets → Extensiones → Apps Script: reemplazar `Código.gs` por `apps-script/Code.gs`.
-3. Guardar → Implementar → Administrar implementaciones → editar lápiz → Nueva versión → Implementar.
-
-## Pestañas creadas en Google Sheets
-- Trabajadores
-- Reportes
-- Empresas: Empresa | CorreoDoctor
-
-## Notas
-- El PDF se genera en Google Drive y se envía por correo.
-- Si hay síntomas, se envía copia al correo del doctor de la empresa y a lizette.cersso@unacem.pe.
+Mejoras incluidas:
+- Se retira la pregunta “¿Ejecutará hoy una actividad de alto riesgo?”.
+- Actividades se seleccionan directamente.
+- Se agrega “Otras Actividades de bajo riesgo”.
+- EjecutaAltoRiesgo se calcula automáticamente: SI si selecciona una de las seis actividades de alto riesgo; NO si selecciona bajo riesgo.
+- La lista de síntomas incluye al final “No presento ninguna molestia o síntomas”.
+- Se agrega texto de alerta previo al botón Finalizar Registro.
+- Mensaje final actualizado.
+- Dashboard: etiqueta de porcentaje sobre cada barra de cumplimiento.
+- Dashboard: síntomas detectados se calcula solo desde reportes CON SÍNTOMAS y excluye “No presento ninguna molestia o síntomas”.
