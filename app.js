@@ -1,19 +1,104 @@
-const ACTIVIDADES_ALTO_RIESGO=['Trabajos en Altura','Trabajos en Caliente','Trabajos en Espacio Confinado','Trabajos en Izaje mecánico de cargas','Trabajos de Excavación o Demolición','Trabajos con Aislamiento de Energía'];
-const ACTIVIDAD_BAJO_RIESGO='Otras Actividades de bajo riesgo';
-const ACTIVIDADES=[...ACTIVIDADES_ALTO_RIESGO,ACTIVIDAD_BAJO_RIESGO];
-const SINTOMAS=['Dolor de cabeza','Mareos o sensación de inestabilidad','Visión borrosa o doble','Náuseas o vómitos','Falta de aire / dificultad para respirar','Dolor en alguna parte del cuerpo','Dolor o presión en el pecho','Palpitaciones o taquicardia','Fiebre o escalofríos','Fatiga o somnolencia','Pérdida de equilibrio','Zumbido/dolor de oídos','Sensación de desmayo','No presento ninguna molestia o síntomas'];
+const ACTIVIDADES_ALTO_RIESGO=['Trabajos en Altura','Trabajos en Caliente','Trabajos en Espacio Confinado','Trabajos en Izaje mecánico de cargas','Trabajos de Excavación o Demolición','Trabajos con Aislamiento de Energía','Conducción de Equipos Móviles'];
+const ACTIVIDAD_SIN_ALTO_RIESGO='No realizo trabajos de alto riesgo';
+const ACTIVIDADES=[...ACTIVIDADES_ALTO_RIESGO,ACTIVIDAD_SIN_ALTO_RIESGO];
+const SINTOMAS=['Dolor de cabeza','Mareos o sensación de inestabilidad','Visión borrosa o doble','Náuseas o vómitos','Falta de aire / dificultad para respirar','Dolor en alguna parte del cuerpo','Dolor o presión en el pecho','Palpitaciones o taquicardia','Fiebre o escalofríos','Fatiga o Cansancio Excesivo','Malestar General','Pérdida de equilibrio','Zumbido/dolor de oídos','Sensación de desmayo','No presento ninguna molestia o síntomas'];
 let trabajadorActual=null,empresasCache=[],chartCum=null,chartSint=null;
 function today(){return new Date().toISOString().slice(0,10)}
 function showView(id){document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));document.getElementById(id).classList.remove('hidden')}
-function salirTrabajador(){trabajadorActual=null;dniBuscar.value='';datosTrab.classList.add('hidden');formReporte.reset();formReporte.classList.add('hidden');showView('trabajador')}
+function salirTrabajador(){trabajadorActual=null;dniBuscar.value='';datosTrab.classList.add('hidden');formReporte.reset();formReporte.classList.add('hidden');actualizarVistaActividad();showView('trabajador')}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),4500)}
 async function api(action,data={}){if(typeof API_URL==='undefined'||!API_URL||API_URL.includes('PEGA_AQUI'))throw new Error('Falta configurar API_URL');const r=await fetch(API_URL,{method:'POST',body:JSON.stringify({action,...data})});const j=await r.json();if(!j.ok)throw new Error(j.error||'Operación no válida');return j}
 function dniOk(v){return /^\d{8}$/.test(String(v||'').trim())}
 async function loadEmpresas(){const r=await api('listarEmpresas');empresasCache=r.empresas||[];return empresasCache}
 function fillSelect(id,all=false){const s=document.getElementById(id);if(!s)return;s.innerHTML=all?'<option value="">Todas las empresas</option>':'<option value="">Empresa *</option>';empresasCache.forEach(e=>s.innerHTML+=`<option>${e.Empresa}</option>`)}
-function initChecks(){acts.innerHTML=ACTIVIDADES.map(a=>`<label class="check"><input type="checkbox" data-act="${a}"> <span>${a}</span></label>`).join('');sints.innerHTML=SINTOMAS.map(a=>`<label class="check"><input type="checkbox" data-sint="${a}"> <span>${a}</span></label>`).join('');document.querySelectorAll('[data-sint]').forEach(ch=>ch.addEventListener('change',()=>{const none=document.querySelector(`[data-sint="${SINTOMAS[SINTOMAS.length-1]}"]`);if(ch===none&&ch.checked)document.querySelectorAll('[data-sint]').forEach(x=>{if(x!==none)x.checked=false});if(ch!==none&&ch.checked&&none)none.checked=false}));document.querySelectorAll('[data-act]').forEach(ch=>ch.addEventListener('change',()=>{const bajo=document.querySelector(`[data-act="${ACTIVIDAD_BAJO_RIESGO}"]`);if(ch===bajo&&ch.checked)document.querySelectorAll('[data-act]').forEach(x=>{if(x!==bajo)x.checked=false});if(ch!==bajo&&ch.checked&&bajo)bajo.checked=false}))}
-async function buscarTrabajador(){try{const d=dniBuscar.value.trim();if(!dniOk(d))return toast('DNI debe tener 8 dígitos');const r=await api('buscarTrabajador',{dni:d});if(!r.trabajador){datosTrab.classList.remove('hidden');datosTrab.innerHTML='<b>DNI no se encuentra activo en la master.</b>';formReporte.classList.add('hidden');return}trabajadorActual=r.trabajador;datosTrab.classList.remove('hidden');datosTrab.innerHTML=`<b>${r.trabajador.Nombres}</b><br>${r.trabajador.Cargo} · ${r.trabajador.Empresa} · ${r.trabajador.Sede}<br>Celular: ${r.trabajador.Celular||''}`;formReporte.classList.remove('hidden')}catch(e){toast(e.message)}}
-formReporte.onsubmit=async ev=>{ev.preventDefault();try{if(!trabajadorActual)return toast('Busque primero al trabajador');let Actividades={},Sintomas={};document.querySelectorAll('[data-act]:checked').forEach(x=>Actividades[x.dataset.act]='SI');document.querySelectorAll('[data-sint]:checked').forEach(x=>Sintomas[x.dataset.sint]='SI');if(!Object.keys(Actividades).length)return toast('Debe seleccionar al menos una actividad');if(!Object.keys(Sintomas).length)return toast('Debe seleccionar su condición de síntomas');if(!declara.checked)return toast('Debe aceptar la declaración');const ejecutaAlto=Object.keys(Actividades).some(a=>ACTIVIDADES_ALTO_RIESGO.includes(a))?'SI':'NO';const sinMolestia=!!Sintomas['No presento ninguna molestia o síntomas'];const condicion=sinMolestia?'SIN SÍNTOMAS':'CON SÍNTOMAS';const reporte={...trabajadorActual,DNI:String(trabajadorActual.DNI),EjecutaAltoRiesgo:ejecutaAlto,Actividades,Sintomas,Observacion:sinMolestia?'No presenta síntomas':'',Condicion:condicion,DeclaracionVeraz:'SI'};await api('guardarReporte',{reporte});alert('Registro finalizado. Se le recuerda que si durante su jornada de trabajo presenta algún síntoma descrito anteriormente deberá comunicar a su jefe inmediato y hacercarse al Tópico o Ambulancia de la Planta de manera obligatoria.');formReporte.reset();formReporte.classList.add('hidden');datosTrab.classList.add('hidden');dniBuscar.value='';trabajadorActual=null}catch(e){toast(e.message)}}
+function initChecks(){
+  acts.innerHTML=ACTIVIDADES.map(a=>`<label class="check"><input type="checkbox" data-act="${a}"> <span>${a}</span></label>`).join('');
+  sints.innerHTML=SINTOMAS.map(a=>`<label class="check"><input type="checkbox" data-sint="${a}"> <span>${a}</span></label>`).join('');
+
+  document.querySelectorAll('[data-sint]').forEach(ch=>ch.addEventListener('change',()=>{
+    const none=document.querySelector(`[data-sint="No presento ninguna molestia o síntomas"]`);
+    if(ch===none&&ch.checked)document.querySelectorAll('[data-sint]').forEach(x=>{if(x!==none)x.checked=false});
+    if(ch!==none&&ch.checked&&none)none.checked=false;
+  }));
+
+  document.querySelectorAll('[data-act]').forEach(ch=>ch.addEventListener('change',()=>{
+    const noAlto=document.querySelector(`[data-act="${ACTIVIDAD_SIN_ALTO_RIESGO}"]`);
+    if(ch===noAlto&&ch.checked){
+      document.querySelectorAll('[data-act]').forEach(x=>{if(x!==noAlto)x.checked=false});
+    }else if(ch!==noAlto&&ch.checked&&noAlto){
+      noAlto.checked=false;
+    }
+    actualizarVistaActividad();
+  }));
+
+  actualizarVistaActividad();
+}
+
+function actualizarVistaActividad(){
+  const noAlto=document.querySelector(`[data-act="${ACTIVIDAD_SIN_ALTO_RIESGO}"]`);
+  const ocultar=!!(noAlto&&noAlto.checked);
+  const bloque=document.getElementById('bloqueSintomas');
+  if(bloque)bloque.classList.toggle('hidden',ocultar);
+  if(ocultar)document.querySelectorAll('[data-sint]').forEach(x=>x.checked=false);
+}
+
+async function buscarTrabajador(){try{const d=dniBuscar.value.trim();if(!dniOk(d))return toast('DNI debe tener 8 dígitos');const r=await api('buscarTrabajador',{dni:d});if(!r.trabajador){datosTrab.classList.remove('hidden');datosTrab.innerHTML='<b>DNI no se encuentra activo en la master.</b>';formReporte.classList.add('hidden');return}trabajadorActual=r.trabajador;datosTrab.classList.remove('hidden');datosTrab.innerHTML=`<b>${r.trabajador.Nombres}</b><br>${r.trabajador.Cargo} · ${r.trabajador.Empresa} · ${r.trabajador.Sede}<br>Celular: ${r.trabajador.Celular||''}`;formReporte.classList.remove('hidden');formReporte.reset();actualizarVistaActividad()}catch(e){toast(e.message)}}
+formReporte.onsubmit=async ev=>{
+  ev.preventDefault();
+  try{
+    if(!trabajadorActual)return toast('Busque primero al trabajador');
+
+    const Actividades={};
+    const Sintomas={};
+    document.querySelectorAll('[data-act]:checked').forEach(x=>Actividades[x.dataset.act]='SI');
+    document.querySelectorAll('[data-sint]:checked').forEach(x=>Sintomas[x.dataset.sint]='SI');
+
+    if(!Object.keys(Actividades).length)return toast('Debe seleccionar al menos una actividad');
+
+    const noRealizaAlto=!!Actividades[ACTIVIDAD_SIN_ALTO_RIESGO];
+
+    if(!noRealizaAlto&&!Object.keys(Sintomas).length){
+      return toast('Debe seleccionar los síntomas que presenta o indicar que no presenta molestias');
+    }
+
+    if(!declara.checked)return toast('Debe aceptar la declaración');
+
+    const ejecutaAlto=noRealizaAlto?'NO':'SI';
+    const sinMolestia=noRealizaAlto||!!Sintomas['No presento ninguna molestia o síntomas'];
+    const condicion=sinMolestia?'SIN SÍNTOMAS':'CON SÍNTOMAS';
+
+    const reporte={
+      ...trabajadorActual,
+      DNI:String(trabajadorActual.DNI),
+      EjecutaAltoRiesgo:ejecutaAlto,
+      Actividades,
+      Sintomas,
+      Observacion:noRealizaAlto?'No realiza trabajos de alto riesgo':(sinMolestia?'No presenta síntomas':''),
+      Condicion:condicion,
+      DeclaracionVeraz:'SI'
+    };
+
+    await api('guardarReporte',{reporte});
+
+    if(condicion==='CON SÍNTOMAS'){
+      alert('Registro finalizado. Informar a su supervisor inmediatamente y contactar al área médica de UNACEM (UME) - Cel.: 987466352 antes de iniciar cualquier actividad.');
+    }else if(noRealizaAlto){
+      alert('Registro finalizado. Si durante la jornada le asignan una tarea de alto riesgo, deberá volver a realizar el registro de síntomas antes de ejecutar dicho trabajo.');
+    }else{
+      alert('Registro finalizado. Si durante su jornada presenta algún síntoma, deberá comunicarlo inmediatamente a su supervisor y acercarse al Tópico o Ambulancia de la Planta.');
+    }
+
+    formReporte.reset();
+    formReporte.classList.add('hidden');
+    datosTrab.classList.add('hidden');
+    dniBuscar.value='';
+    trabajadorActual=null;
+    actualizarVistaActividad();
+  }catch(e){
+    toast(e.message);
+  }
+}
+
 async function initEmpresa(){await loadEmpresas();fillSelect('temp');fillSelect('fempGestion',true);listarTrabajadores()}
 async function guardarTrabajador(){try{const t={DNI:tdni.value.trim(),Nombres:tnom.value.trim(),Cargo:tcargo.value.trim(),Empresa:temp.value,Sede:tsede.value.trim(),Correo:tcorreo.value.trim(),Celular:tcelular.value.trim(),Estado:test.value};if(!dniOk(t.DNI))return toast('DNI debe tener 8 dígitos');if(Object.values(t).some(v=>!v))return toast('Todos los campos son obligatorios');await api('guardarTrabajador',{trabajador:t});toast('Trabajador guardado');tdni.value=tnom.value=tcargo.value=tcorreo.value=tcelular.value='';tsede.value='';temp.value='';test.value='ACTIVO';listarTrabajadores()}catch(e){toast(e.message)}}
 async function listarTrabajadores(){try{const r=await api('listarTrabajadores',{empresa:fempGestion.value});const arr=r.trabajadores||[];tablaTrab.innerHTML='<table class="table"><tr><th>DNI</th><th>Nombres</th><th>Cargo</th><th>Empresa</th><th>Celular</th><th>Estado</th><th>Acción</th></tr>'+arr.map(x=>`<tr><td>${x.DNI}</td><td>${x.Nombres}</td><td>${x.Cargo}</td><td>${x.Empresa}</td><td>${x.Celular||''}</td><td>${x.Estado}</td><td><button onclick='editTrab(${JSON.stringify(x).replace(/'/g,"&#39;")})'>Editar</button></td></tr>`).join('')+'</table>'}catch(e){toast(e.message)}}
