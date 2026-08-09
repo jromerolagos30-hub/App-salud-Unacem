@@ -1,5 +1,6 @@
 const SPREADSHEET_ID='1_iaQ5gpJpYxVKAz2hmYmiVij6JirzgLH9bwdjfKPmvs';
 const SHEET_TRAB='Trabajadores',SHEET_REP='Reportes',SHEET_EMP='Empresas';
+const POWER_AUTOMATE_URL = 'https://default6d25241940fe4964bb31e8aaa96d97.66.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/06/workflows/82bf1cf88b3c4b6ebcee84274acf9b59/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=baJnG8D36KzGOcZX8aZWSkxKKZPJfzJIjwo8onvS2YY';
 const DOCTORA_UNACEM='lizette.cersso@unacem.pe',MEDICO_TOPICO='apoyosan1unacem@pulsosalud.com',MEDICO_COORDINADOR='coordinadorunacem@pulsosalud.com',CORREO_HAUG='juninho.sanez@haug.com.pe';
 function doPost(e){try{const body=JSON.parse(e.postData.contents||'{}');setup_();let res;if(body.action==='buscarTrabajador')res=buscarTrabajador_(body.dni);else if(body.action==='guardarTrabajador')res=guardarTrabajador_(body.trabajador);else if(body.action==='listarTrabajadores')res=listarTrabajadores_(body.empresa);else if(body.action==='guardarEmpresa')res=guardarEmpresa_(body.empresa);else if(body.action==='listarEmpresas')res=listarEmpresas_();else if(body.action==='guardarReporte')res=guardarReporte_(body.reporte);else if(body.action==='dashboard')res=dashboard_(body.fecha,body.empresa,body.condicion,body.mes);else if(body.action==='validarPermiso')res=validarPermiso_(body.dnis||[],body.fecha,body.empresa);else throw new Error('Acción no válida');return json_({ok:true,...res});}catch(err){return json_({ok:false,error:String(err.message||err)});}}
 function doGet(){setup_();return json_({ok:true,message:'API Salud UNACEM V9 activa'});}
@@ -56,7 +57,32 @@ ${sintomasTexto}
 ${esCon?'ACCIÓN REQUERIDA: Informar al supervisor inmediatamente y contactar al área médica de UNACEM (UME) - Cel.: 987466352 antes de iniciar cualquier actividad.':''}
 
 Se adjunta el PDF generado automáticamente por la aplicación.`;
-  MailApp.sendEmail({to:r.Correo,cc:copias.join(','),subject:`Registro de Síntomas (${r.Empresa}) - ${fechaTxt}`,body:cuerpoCorreo,attachments:[pdf]});
+  const payload = {
+  para: r.Correo,
+  cc: copias.join(';'),
+  asunto: `Registro de Síntomas (${r.Empresa}) - ${fechaTxt}`,
+  mensaje: cuerpoCorreo,
+  nombrePDF: `Registro-Sintomas-${r.DNI}.pdf`,
+  pdfBase64: Utilities.base64Encode(pdf.getBytes())
+};
+
+const respuesta = UrlFetchApp.fetch(POWER_AUTOMATE_URL, {
+  method: 'post',
+  contentType: 'application/json',
+  payload: JSON.stringify(payload),
+  muteHttpExceptions: true
+});
+
+const codigo = respuesta.getResponseCode();
+
+if (codigo < 200 || codigo >= 300) {
+  throw new Error(
+    'Error Power Automate HTTP ' +
+    codigo +
+    ': ' +
+    respuesta.getContentText()
+  );
+}
   return{ccEnviado:copias.length>0};
 }
 function getCopias_(r,esCon){
