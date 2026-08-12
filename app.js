@@ -43,14 +43,43 @@ function actualizarVistaActividad(){
 }
 
 async function buscarTrabajador(){try{const d=dniBuscar.value.trim();if(!dniOk(d))return toast('DNI debe tener 8 dígitos');const r=await api('buscarTrabajador',{dni:d});if(!r.trabajador){datosTrab.classList.remove('hidden');datosTrab.innerHTML='<b>DNI no se encuentra activo en la master.</b>';formReporte.classList.add('hidden');return}trabajadorActual=r.trabajador;datosTrab.classList.remove('hidden');datosTrab.innerHTML=`<b>${r.trabajador.Nombres}</b><br>${r.trabajador.Cargo} · ${r.trabajador.Empresa} · ${r.trabajador.Sede}<br>Celular: ${r.trabajador.Celular||''}`;formReporte.classList.remove('hidden');formReporte.reset();actualizarVistaActividad()}catch(e){toast(e.message)}}
-formReporte.onsubmit=async ev=>{
+formReporte.onsubmit = async ev => {
+
   ev.preventDefault();
-  try{
-    if(!trabajadorActual)return toast('Busque primero al trabajador');
+
+  // Bloquear el botón para evitar doble clic
+  const boton = ev.submitter;
+  boton.disabled = true;
+  boton.textContent = "Registrando...";
+  boton.style.opacity = "0.6";
+  boton.style.cursor = "not-allowed";
+
+formReporte.onsubmit = async ev => {
+
+  ev.preventDefault();
+
+  // Bloquear el botón para evitar doble clic
+  const boton = ev.submitter;
+  boton.disabled = true;
+  boton.textContent = "Registrando...";
+  boton.style.opacity = "0.6";
+  boton.style.cursor = "not-allowed";
+
+  try {
+
+    if(!trabajadorActual) {
+      boton.disabled = false;
+      boton.textContent = "Registrar";
+      boton.style.opacity = "1";
+      boton.style.cursor = "pointer";
+      return toast('Busque primero al trabajador');
+    }
 
     const Actividades={};
     const Sintomas={};
-    document.querySelectorAll('[data-act]:checked').forEach(x=>Actividades[x.dataset.act]='SI');
+
+    document.querySelectorAll('[data-act]:checked')
+      .forEach(x=>Actividades[x.dataset.act]='SI');
     document.querySelectorAll('[data-sint]:checked').forEach(x=>Sintomas[x.dataset.sint]='SI');
 
     if(!Object.keys(Actividades).length)return toast('Debe seleccionar al menos una actividad');
@@ -93,7 +122,8 @@ formReporte.onsubmit=async ev=>{
     datosTrab.classList.add('hidden');
     dniBuscar.value='';
     trabajadorActual=null;
-    actualizarVistaActividad();
+    actualizarVistaActividad();boton.disabled = false;
+boton.textContent = 'Registrar';
   }catch(e){
     toast(e.message);
   }
